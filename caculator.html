@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Calculator</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #1e1e2f;
+      font-family: Arial, sans-serif;
+    }
+
+    .calculator {
+      background: #2c2c3c;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .display {
+      width: 100%;
+      height: 50px;
+      margin-bottom: 10px;
+      font-size: 20px;
+      text-align: right;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 60px);
+      gap: 10px;
+    }
+
+    button {
+      height: 50px;
+      font-size: 18px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #4a4a6a;
+      color: white;
+    }
+
+    button:hover {
+      background: #6a6a9a;
+    }
+
+    .equal {
+      background: #00b894;
+    }
+
+    .equal:hover {
+      background: #00d1a0;
+    }
+
+    .clear {
+      background: #d63031;
+    }
+
+    .clear:hover {
+      background: #ff4d4d;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <input type="text" id="display" class="display" readonly>
+
+    <div class="buttons">
+      <button onclick="clearDisplay()" class="clear">C</button>
+      <button onclick="append('/')">/</button>
+      <button onclick="append('*')">*</button>
+      <button onclick="append('-')">-</button>
+
+      <button onclick="append('7')">7</button>
+      <button onclick="append('8')">8</button>
+      <button onclick="append('9')">9</button>
+      <button onclick="append('+')">+</button>
+
+      <button onclick="append('4')">4</button>
+      <button onclick="append('5')">5</button>
+      <button onclick="append('6')">6</button>
+      <button onclick="calculate()" class="equal">=</button>
+
+      <button onclick="append('1')">1</button>
+      <button onclick="append('2')">2</button>
+      <button onclick="append('3')">3</button>
+      <button onclick="append('0')">0</button>
+    </div>
+  </div>
+
+  <script>
+    const display = document.getElementById("display");
+
+    function append(value) {
+      display.value += value;
+    }
+
+    function clearDisplay() {
+      display.value = "";
+    }
+
+    function tokenizeExpression(expression) {
+      const cleaned = expression.replace(/\s+/g, "");
+      if (!cleaned) {
+        throw new Error("Empty expression");
+      }
+
+      const tokens = cleaned.match(/\d+(?:\.\d+)?|[()+\-*/]/g);
+      if (!tokens || tokens.join("") !== cleaned) {
+        throw new Error("Invalid expression");
+      }
+
+      return tokens;
+    }
+
+    function parseExpression(tokens) {
+      let index = 0;
+
+      function parseTerm() {
+        let value = parseFactor();
+        while (index < tokens.length && (tokens[index] === "*" || tokens[index] === "/")) {
+          const operator = tokens[index++];
+          const right = parseFactor();
+          if (operator === "*") {
+            value *= right;
+          } else {
+            if (right === 0) {
+              throw new Error("Division by zero");
+            }
+            value /= right;
+          }
+        }
+        return value;
+      }
+
+      function parseFactor() {
+        if (index >= tokens.length) {
+          throw new Error("Unexpected end of expression");
+        }
+
+        const token = tokens[index];
+        if (token === "(") {
+          index++;
+          const value = parseExpression();
+          if (tokens[index] !== ")") {
+            throw new Error("Missing closing parenthesis");
+          }
+          index++;
+          return value;
+        }
+
+        if (token === "+" || token === "-") {
+          const operator = token;
+          index++;
+          const value = parseFactor();
+          return operator === "-" ? -value : value;
+        }
+
+        if (/^\d+(?:\.\d+)?$/.test(token)) {
+          index++;
+          return Number(token);
+        }
+
+        throw new Error("Invalid token");
+      }
+
+      function parseExpression() {
+        let value = parseTerm();
+        while (index < tokens.length && (tokens[index] === "+" || tokens[index] === "-")) {
+          const operator = tokens[index++];
+          const right = parseTerm();
+          value = operator === "+" ? value + right : value - right;
+        }
+        return value;
+      }
+
+      const result = parseExpression();
+      if (index !== tokens.length) {
+        throw new Error("Unexpected token");
+      }
+      return result;
+    }
+
+    function calculate() {
+      try {
+        const tokens = tokenizeExpression(display.value);
+        const result = parseExpression(tokens);
+        if (!Number.isFinite(result)) {
+          throw new Error("Invalid result");
+        }
+        display.value = result;
+      } catch {
+        display.value = "Error";
+      }
+    }
+  </script>
+</body>
+</html>
